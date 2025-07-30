@@ -1,0 +1,28 @@
+[Unit]
+Description=ML Training on Aliyun Spot Instance
+After=network.target
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/workspace
+ExecStart=/workspace/run_training.sh
+Restart=on-failure
+RestartSec=30
+TimeoutStartSec=300
+TimeoutStopSec=60
+
+# 环境变量 - 请修改为你的实际配置
+Environment=ALIBABA_CLOUD_ACCESS_KEY_ID=your-access-key-id
+Environment=ALIBABA_CLOUD_ACCESS_KEY_SECRET=your-access-key-secret
+Environment=OSS_ENDPOINT=oss-cn-hangzhou.aliyuncs.com
+Environment=OSS_BUCKET=your-ml-training-bucket
+
+# 日志配置
+StandardOutput=append:/workspace/logs/service.log
+StandardError=append:/workspace/logs/service.log
+
+[Install]
+WantedBy=multi-user.target

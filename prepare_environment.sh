@@ -12,12 +12,20 @@ log() {
 
 log "开始准备训练环境..."
 
-# 定义变量
-WORKSPACE="/workspace"
-DATA_DIR="${WORKSPACE}/data"
-MODEL_DIR="${WORKSPACE}/models"
-CHECKPOINT_DIR="${WORKSPACE}/checkpoints"
-LOG_DIR="${WORKSPACE}/logs"
+# 加载配置文件
+if [ -f "/workspace/config.env" ]; then
+    log "加载配置文件: /workspace/config.env"
+    source /workspace/config.env
+else
+    log "警告: 未找到配置文件 /workspace/config.env，使用默认配置"
+fi
+
+# 定义变量（可被config.env覆盖）
+WORKSPACE="${WORKSPACE:-/workspace}"
+DATA_DIR="${DATA_DIR:-${WORKSPACE}/data}"
+MODEL_DIR="${MODEL_DIR:-${WORKSPACE}/models}"
+CHECKPOINT_DIR="${CHECKPOINT_DIR:-${WORKSPACE}/checkpoints}"
+LOG_DIR="${LOG_DIR:-${WORKSPACE}/logs}"
 
 # 创建必要的目录
 mkdir -p ${DATA_DIR}

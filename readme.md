@@ -81,17 +81,86 @@
    - 自动安装依赖、下载脚本、配置服务
    - 自动启动训练服务
 
-> 💡 **提示**：如果需要更快的启动速度，也可以先在按量实例上运行deploy.sh，然后制作自定义镜像使用。
+#### 可选方式：自定义镜像部署
+
+对于需要频繁创建实例或有特殊环境要求的开发者，推荐制作自定义镜像：
+
+1. **准备基础镜像**：
+   ```bash
+   # 在一台按量实例上执行
+   
+   # 1. 安装系统依赖
+   sudo apt update && sudo apt install -y python3-pip git curl
+   
+   # 2. 安装Python依赖
+   pip3 install -U torch transformers datasets huggingface_hub
+   
+   # 3. 下载项目文件
+   git clone https://github.com/songtao2627/aliyun-sport-trainer.git
+   cd aliyun-sport-trainer
+   
+   # 4. 创建工作目录并复制脚本
+   sudo mkdir -p /workspace/logs
+   sudo cp *.sh /workspace/
+   sudo chmod +x /workspace/*.sh
+   
+   # 5. 安装systemd服务
+   sudo cp ml-training.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable ml-training.service
+   
+   # 6. 创建配置文件模板
+   sudo cp config.env.example /workspace/config.env
+   
+   # 7. 清理临时文件
+   cd .. && rm -rf aliyun-sport-trainer
+   ```
+
+2. **创建自定义镜像**：
+   - 阿里云控制台 → ECS → 实例 → 更多 → 磁盘和镜像 → 创建自定义镜像
+   - 镜像名称：`ml-training-v1.0`
+
+3. **使用镜像创建抢占式实例**：
+   - 选择自定义镜像
+   - 在"高级选项 → 用户数据"中配置环境变量（可选）：
+     ```yaml
+     #cloud-config
+     write_files:
+       - path: /workspace/config.env
+         content: |
+           ALIBABA_CLOUD_ACCESS_KEY_ID=your-access-key
+           ALIBABA_CLOUD_ACCESS_KEY_SECRET=your-secret
+           OSS_ENDPOINT=oss-cn-hangzhou.aliyuncs.com
+           OSS_BUCKET=your-bucket
+     runcmd:
+       - systemctl start ml-training.service
+     ```
+   - 或者实例启动后手动配置 `/workspace/config.env` 和 `/etc/systemd/system/ml-training.service`
+
+**镜像方式的优势**：
+- ⚡ 启动速度更快（无需下载依赖）
+- 🔒 环境一致性更好
+- 📦 便于版本管理和分发
+- 🚀 适合批量部署
 
 ### 3. 配置参数
 
-编辑 `ml-training.service` 文件，修改以下环境变量：
+编辑 `/workspace/config.env` 文件，配置以下参数：
 
 ```bash
-Environment=ALIBABA_CLOUD_ACCESS_KEY_ID=你的AccessKey
-Environment=ALIBABA_CLOUD_ACCESS_KEY_SECRET=你的AccessSecret
-Environment=OSS_ENDPOINT=oss-cn-hangzhou.aliyuncs.com
-Environment=OSS_BUCKET=你的OSS存储桶名称
+# 阿里云访问凭证
+ALIBABA_CLOUD_ACCESS_KEY_ID=你的AccessKey
+ALIBABA_CLOUD_ACCESS_KEY_SECRET=你的AccessSecret
+
+# OSS配置
+OSS_ENDPOINT=oss-cn-hangzhou.aliyuncs.com
+OSS_BUCKET=你的OSS存储桶名称
+
+# 训练配置
+TOTAL_EPOCHS=100
+SAVE_INTERVAL=10
+BATCH_SIZE=32
+LEARNING_RATE=0.001
 ```
 
 ### 4. 监控训练进度

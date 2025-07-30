@@ -5,6 +5,12 @@
 
 set -e
 
+# 加载配置文件
+if [ -f "/workspace/config.env" ]; then
+    echo "加载配置文件: /workspace/config.env"
+    source /workspace/config.env
+fi
+
 # 日志函数
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a /workspace/logs/training.log
